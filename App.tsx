@@ -12,13 +12,13 @@ import ClientPickerScreen from './src/screens/ClientPickerScreen';
 import CaptureScreen from './src/screens/CaptureScreen';
 import QueueScreen from './src/screens/QueueScreen';
 
-type View = 'capture' | 'queue';
+type Screen = 'capture' | 'queue';
 
 export default function App() {
   const [session, setSession] = useState<Session | null>(null);
   const [ready, setReady] = useState(false);
   const [client, setClient] = useState<ClientRow | null>(null);
-  const [view, setView] = useState<View>('capture');
+  const [view, setView] = useState<Screen>('capture');
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data }) => {
