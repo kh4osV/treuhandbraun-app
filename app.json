@@ -16,7 +16,9 @@
     },
     "android": {
       "package": "ch.fluketreuhand.belege",
-      "permissions": ["CAMERA"]
+      "permissions": [
+        "CAMERA"
+      ]
     },
     "plugins": [
       [
@@ -24,7 +26,8 @@
         {
           "cameraPermission": "Belege fotografieren und hochladen."
         }
-      ]
+      ],
+      "expo-asset"
     ]
   }
 }
