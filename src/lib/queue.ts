@@ -7,7 +7,8 @@
 
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import NetInfo from '@react-native-community/netinfo';
-import * as FileSystem from 'expo-file-system';
+// SDK 55: documentDirectory/copyAsync/… leben in /legacy.
+import * as FileSystem from 'expo-file-system/legacy';
 import { uploadReceipt } from './api';
 
 const STORE_KEY = 'intake.queue.v1';

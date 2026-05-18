@@ -6,7 +6,8 @@
 // Datei-Inhalt IST der Request-Body, Metadaten gehen als Query-Param,
 // Auth als Bearer-Header.
 
-import * as FileSystem from 'expo-file-system';
+// SDK 55: uploadAsync/FileSystemUploadType leben in /legacy.
+import * as FileSystem from 'expo-file-system/legacy';
 import { UPLOAD_ENDPOINT } from './config';
 import { currentAccessToken } from './supabase';
 
