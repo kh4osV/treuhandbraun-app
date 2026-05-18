@@ -36,7 +36,7 @@ export default function CaptureScreen({
         fileName: `beleg_${ts}.jpg`,
         mime: 'image/jpeg',
         clientId: client.client_id,
-        clientName: client.name ?? client.client_id
+        clientName: client.company_name ?? client.client_id
       });
       Alert.alert('In Queue', 'Beleg wird hochgeladen, sobald Netz da ist.');
     } catch (e: any) {
@@ -69,7 +69,7 @@ export default function CaptureScreen({
     <View style={styles.wrap}>
       <Pressable style={styles.clientBar} onPress={onChangeClient}>
         <Text style={styles.clientLabel}>Mandant</Text>
-        <Text style={styles.clientName}>{client.name ?? client.client_id}</Text>
+        <Text style={styles.clientName}>{client.company_name ?? client.client_id}</Text>
         <Text style={styles.change}>ändern ›</Text>
       </Pressable>
 

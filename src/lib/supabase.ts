@@ -18,15 +18,16 @@ export const supabase = createClient(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY, {
   }
 });
 
-export type ClientRow = { client_id: string; name: string | null };
+// Anzeigespalte ist company_name (clients hat kein `name`).
+export type ClientRow = { client_id: string; company_name: string | null };
 
 // RLS-gefiltert: Admin/Treuhänder sehen alle, Unternehmer nur den
 // eigenen Mandanten — exakt wie im Web (siehe roles.ts im Web-Repo).
 export async function listClients(): Promise<ClientRow[]> {
   const { data, error } = await supabase
     .from('clients')
-    .select('client_id, name')
-    .order('name', { ascending: true });
+    .select('client_id, company_name')
+    .order('company_name', { ascending: true });
   if (error) throw error;
   return (data ?? []) as ClientRow[];
 }

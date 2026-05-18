@@ -34,7 +34,7 @@ export default function ClientPickerScreen({
     if (!needle) return rows;
     return rows.filter(
       (r) =>
-        (r.name ?? '').toLowerCase().includes(needle) ||
+        (r.company_name ?? '').toLowerCase().includes(needle) ||
         r.client_id.toLowerCase().includes(needle)
     );
   }, [rows, q]);
@@ -63,7 +63,7 @@ export default function ClientPickerScreen({
         ItemSeparatorComponent={() => <View style={styles.sep} />}
         renderItem={({ item }) => (
           <Pressable style={styles.row} onPress={() => onPick(item)}>
-            <Text style={styles.name}>{item.name ?? '(ohne Name)'}</Text>
+            <Text style={styles.name}>{item.company_name ?? '(ohne Name)'}</Text>
             <Text style={styles.cid}>{item.client_id}</Text>
           </Pressable>
         )}
