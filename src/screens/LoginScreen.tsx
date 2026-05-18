@@ -19,6 +19,7 @@ export default function LoginScreen() {
   const [password, setPassword] = useState('');
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState<string | null>(null);
+  const [showPw, setShowPw] = useState(false);
 
   async function signIn() {
     setBusy(true);
@@ -36,7 +37,7 @@ export default function LoginScreen() {
       style={styles.wrap}
       behavior={Platform.OS === 'ios' ? 'padding' : undefined}
     >
-      <Text style={styles.title}>Treuhand Braun</Text>
+      <Text style={styles.title}>fluke Treuhand</Text>
       <Text style={styles.sub}>Belege fotografieren & hochladen</Text>
 
       <TextInput
@@ -48,13 +49,20 @@ export default function LoginScreen() {
         value={email}
         onChangeText={setEmail}
       />
-      <TextInput
-        style={styles.input}
-        placeholder="Passwort"
-        secureTextEntry
-        value={password}
-        onChangeText={setPassword}
-      />
+      <View style={styles.pwRow}>
+        <TextInput
+          style={styles.pwInput}
+          placeholder="Passwort"
+          secureTextEntry={!showPw}
+          autoCapitalize="none"
+          autoCorrect={false}
+          value={password}
+          onChangeText={setPassword}
+        />
+        <Pressable style={styles.pwToggle} onPress={() => setShowPw((v) => !v)} hitSlop={8}>
+          <Text style={styles.pwToggleText}>{showPw ? '🙈 verbergen' : '👁 anzeigen'}</Text>
+        </Pressable>
+      </View>
 
       {err ? <Text style={styles.err}>{err}</Text> : null}
 
@@ -80,6 +88,16 @@ const styles = StyleSheet.create({
     padding: 14,
     fontSize: 16
   },
+  pwRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: '#ccc',
+    borderRadius: 8
+  },
+  pwInput: { flex: 1, padding: 14, fontSize: 16 },
+  pwToggle: { paddingHorizontal: 12, paddingVertical: 14 },
+  pwToggleText: { color: '#1a56db', fontSize: 13, fontWeight: '600' },
   btn: {
     backgroundColor: '#1a56db',
     borderRadius: 8,
