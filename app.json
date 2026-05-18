@@ -16,7 +16,8 @@
     "android": {
       "package": "ch.fluketreuhand.belege",
       "permissions": [
-        "CAMERA"
+        "android.permission.CAMERA",
+        "android.permission.RECORD_AUDIO"
       ]
     },
     "plugins": [
@@ -27,6 +28,12 @@
         }
       ],
       "expo-asset"
-    ]
+    ],
+    "extra": {
+      "eas": {
+        "projectId": "e614587d-5c6c-4e96-b2e5-d8bd2f8785d3"
+      }
+    },
+    "owner": "kh4osv"
   }
 }
