@@ -1,10 +1,10 @@
 {
   "expo": {
-    "name": "fluke Treuhand",
+    "name": "Fluke",
     "slug": "treuhandbraun-app",
     "version": "0.1.0",
     "orientation": "portrait",
-    "userInterfaceStyle": "automatic",
+    "userInterfaceStyle": "dark",
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "ch.fluketreuhand.belege",

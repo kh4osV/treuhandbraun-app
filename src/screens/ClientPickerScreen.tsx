@@ -12,6 +12,7 @@ import {
   View
 } from 'react-native';
 import { listClients, type ClientRow } from '../lib/supabase';
+import { colors, radius } from '../lib/theme';
 
 export default function ClientPickerScreen({
   onPick
@@ -43,7 +44,7 @@ export default function ClientPickerScreen({
   if (!rows)
     return (
       <View style={styles.center}>
-        <ActivityIndicator />
+        <ActivityIndicator color={colors.accent} />
       </View>
     );
 
@@ -53,6 +54,7 @@ export default function ClientPickerScreen({
       <TextInput
         style={styles.search}
         placeholder="Suchen…"
+        placeholderTextColor={colors.textDim}
         value={q}
         onChangeText={setQ}
         autoCapitalize="none"
@@ -74,21 +76,28 @@ export default function ClientPickerScreen({
 }
 
 const styles = StyleSheet.create({
-  wrap: { flex: 1, padding: 16, backgroundColor: '#fff' },
-  center: { flex: 1, justifyContent: 'center', alignItems: 'center' },
-  h: { fontSize: 20, fontWeight: '700', marginBottom: 12 },
+  wrap: { flex: 1, padding: 16, backgroundColor: colors.bg },
+  center: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: colors.bg
+  },
+  h: { fontSize: 20, fontWeight: '700', marginBottom: 12, color: colors.text },
   search: {
+    backgroundColor: colors.bgInput,
     borderWidth: 1,
-    borderColor: '#ccc',
-    borderRadius: 8,
+    borderColor: colors.border,
+    borderRadius: radius.md,
     padding: 12,
     marginBottom: 12,
-    fontSize: 16
+    fontSize: 16,
+    color: colors.text
   },
   row: { paddingVertical: 14 },
-  name: { fontSize: 16, fontWeight: '600' },
-  cid: { fontSize: 12, color: '#888', marginTop: 2 },
-  sep: { height: 1, backgroundColor: '#eee' },
-  empty: { color: '#888', textAlign: 'center', marginTop: 24 },
-  err: { color: '#c0392b', padding: 16 }
+  name: { fontSize: 16, fontWeight: '600', color: colors.text },
+  cid: { fontSize: 12, color: colors.textDim, marginTop: 2 },
+  sep: { height: 1, backgroundColor: colors.border },
+  empty: { color: colors.textMuted, textAlign: 'center', marginTop: 24 },
+  err: { color: colors.danger, padding: 16, backgroundColor: colors.bg }
 });

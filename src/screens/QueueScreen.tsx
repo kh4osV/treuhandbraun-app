@@ -13,6 +13,7 @@ import {
   type QueueItem,
   type QueueStatus
 } from '../lib/queue';
+import { colors, radius } from '../lib/theme';
 
 const STATUS_LABEL: Record<QueueStatus, string> = {
   pending: 'Wartet',
@@ -21,10 +22,10 @@ const STATUS_LABEL: Record<QueueStatus, string> = {
   failed: 'Fehler'
 };
 const STATUS_COLOR: Record<QueueStatus, string> = {
-  pending: '#b45309',
-  uploading: '#1a56db',
-  done: '#15803d',
-  failed: '#c0392b'
+  pending: colors.warning,
+  uploading: colors.info,
+  done: colors.success,
+  failed: colors.danger
 };
 
 export default function QueueScreen({ onBack }: { onBack: () => void }) {
@@ -39,10 +40,12 @@ export default function QueueScreen({ onBack }: { onBack: () => void }) {
   return (
     <View style={styles.wrap}>
       <View style={styles.head}>
-        <Pressable onPress={onBack}>
-          <Text style={styles.back}>‹ Zurück</Text>
+        {/* Klar erkennbarer, grossflächiger Zurück-Button (Pill).
+            Vertikaler Versatz unter die Statusleiste passiert in App.tsx. */}
+        <Pressable style={styles.backBtn} onPress={onBack} hitSlop={10}>
+          <Text style={styles.backTxt}>‹ Zurück</Text>
         </Pressable>
-        <Pressable onPress={() => clearDone()}>
+        <Pressable onPress={() => clearDone()} hitSlop={10}>
           <Text style={styles.clear}>Erledigte löschen</Text>
         </Pressable>
       </View>
@@ -65,12 +68,12 @@ export default function QueueScreen({ onBack }: { onBack: () => void }) {
                 {STATUS_LABEL[item.status]}
               </Text>
               {item.status === 'failed' && (
-                <Pressable onPress={() => retryItem(item.id)}>
+                <Pressable onPress={() => retryItem(item.id)} hitSlop={8}>
                   <Text style={styles.action}>Erneut</Text>
                 </Pressable>
               )}
               {(item.status === 'failed' || item.status === 'done') && (
-                <Pressable onPress={() => removeItem(item.id)}>
+                <Pressable onPress={() => removeItem(item.id)} hitSlop={8}>
                   <Text style={styles.remove}>Entfernen</Text>
                 </Pressable>
               )}
@@ -83,25 +86,36 @@ export default function QueueScreen({ onBack }: { onBack: () => void }) {
 }
 
 const styles = StyleSheet.create({
-  wrap: { flex: 1, backgroundColor: '#fff' },
+  wrap: { flex: 1, backgroundColor: colors.bg },
   head: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    padding: 16,
+    alignItems: 'center',
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    backgroundColor: colors.bgSidebar,
     borderBottomWidth: 1,
-    borderBottomColor: '#eee'
+    borderBottomColor: colors.border
   },
-  back: { color: '#1a56db', fontSize: 16 },
-  clear: { color: '#6b7280', fontSize: 14 },
+  backBtn: {
+    paddingVertical: 8,
+    paddingHorizontal: 14,
+    borderRadius: radius.md,
+    borderWidth: 1,
+    borderColor: colors.borderStrong,
+    backgroundColor: colors.bgPanel
+  },
+  backTxt: { color: colors.accent, fontSize: 15, fontWeight: '600' },
+  clear: { color: colors.textMuted, fontSize: 14 },
   row: { flexDirection: 'row', padding: 16, gap: 12 },
-  client: { fontSize: 15, fontWeight: '600' },
-  file: { fontSize: 12, color: '#888', marginTop: 2 },
-  errTxt: { fontSize: 12, color: '#c0392b', marginTop: 4 },
+  client: { fontSize: 15, fontWeight: '600', color: colors.text },
+  file: { fontSize: 12, color: colors.textDim, marginTop: 2 },
+  errTxt: { fontSize: 12, color: colors.danger, marginTop: 4 },
   right: { alignItems: 'flex-end', gap: 6 },
   status: { fontSize: 13, fontWeight: '700' },
-  action: { color: '#1a56db', fontSize: 13 },
-  remove: { color: '#9ca3af', fontSize: 12 },
-  sep: { height: 1, backgroundColor: '#f0f0f0' },
+  action: { color: colors.accent, fontSize: 13 },
+  remove: { color: colors.textDim, fontSize: 12 },
+  sep: { height: 1, backgroundColor: colors.border },
   emptyWrap: { flex: 1, justifyContent: 'center' },
-  empty: { textAlign: 'center', color: '#888' }
+  empty: { textAlign: 'center', color: colors.textMuted }
 });

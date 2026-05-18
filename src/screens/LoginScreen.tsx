@@ -13,6 +13,7 @@ import {
   View
 } from 'react-native';
 import { supabase } from '../lib/supabase';
+import { colors, radius } from '../lib/theme';
 
 export default function LoginScreen() {
   const [email, setEmail] = useState('');
@@ -37,12 +38,15 @@ export default function LoginScreen() {
       style={styles.wrap}
       behavior={Platform.OS === 'ios' ? 'padding' : undefined}
     >
-      <Text style={styles.title}>fluke Treuhand</Text>
+      {/* Brand-Block wie in der Web-Sidebar: grosser Name + Akzent-Mikrolabel */}
+      <Text style={styles.brand}>Fluke</Text>
+      <Text style={styles.edition}>BELEG-UPLOAD</Text>
       <Text style={styles.sub}>Belege fotografieren & hochladen</Text>
 
       <TextInput
         style={styles.input}
         placeholder="E-Mail"
+        placeholderTextColor={colors.textDim}
         autoCapitalize="none"
         keyboardType="email-address"
         autoComplete="email"
@@ -53,6 +57,7 @@ export default function LoginScreen() {
         <TextInput
           style={styles.pwInput}
           placeholder="Passwort"
+          placeholderTextColor={colors.textDim}
           secureTextEntry={!showPw}
           autoCapitalize="none"
           autoCorrect={false}
@@ -71,41 +76,73 @@ export default function LoginScreen() {
         disabled={busy}
         onPress={signIn}
       >
-        {busy ? <ActivityIndicator color="#fff" /> : <Text style={styles.btnText}>Anmelden</Text>}
+        {busy ? (
+          <ActivityIndicator color={colors.bg} />
+        ) : (
+          <Text style={styles.btnText}>Anmelden</Text>
+        )}
       </Pressable>
     </KeyboardAvoidingView>
   );
 }
 
 const styles = StyleSheet.create({
-  wrap: { flex: 1, justifyContent: 'center', padding: 24, gap: 12, backgroundColor: '#fff' },
-  title: { fontSize: 26, fontWeight: '700', textAlign: 'center' },
-  sub: { fontSize: 14, color: '#666', textAlign: 'center', marginBottom: 16 },
+  wrap: {
+    flex: 1,
+    justifyContent: 'center',
+    padding: 24,
+    gap: 12,
+    backgroundColor: colors.bg
+  },
+  brand: {
+    fontSize: 40,
+    fontWeight: '700',
+    letterSpacing: -0.5,
+    textAlign: 'center',
+    color: colors.text
+  },
+  edition: {
+    fontSize: 12,
+    fontWeight: '600',
+    letterSpacing: 3,
+    textAlign: 'center',
+    color: colors.accent,
+    marginTop: 2
+  },
+  sub: {
+    fontSize: 14,
+    color: colors.textMuted,
+    textAlign: 'center',
+    marginBottom: 16
+  },
   input: {
+    backgroundColor: colors.bgInput,
     borderWidth: 1,
-    borderColor: '#ccc',
-    borderRadius: 8,
+    borderColor: colors.border,
+    borderRadius: radius.md,
     padding: 14,
-    fontSize: 16
+    fontSize: 16,
+    color: colors.text
   },
   pwRow: {
     flexDirection: 'row',
     alignItems: 'center',
+    backgroundColor: colors.bgInput,
     borderWidth: 1,
-    borderColor: '#ccc',
-    borderRadius: 8
+    borderColor: colors.border,
+    borderRadius: radius.md
   },
-  pwInput: { flex: 1, padding: 14, fontSize: 16 },
+  pwInput: { flex: 1, padding: 14, fontSize: 16, color: colors.text },
   pwToggle: { paddingHorizontal: 12, paddingVertical: 14 },
-  pwToggleText: { color: '#1a56db', fontSize: 13, fontWeight: '600' },
+  pwToggleText: { color: colors.accent, fontSize: 13, fontWeight: '600' },
   btn: {
-    backgroundColor: '#1a56db',
-    borderRadius: 8,
+    backgroundColor: colors.accent,
+    borderRadius: radius.md,
     padding: 16,
     alignItems: 'center',
     marginTop: 8
   },
   btnDisabled: { opacity: 0.6 },
-  btnText: { color: '#fff', fontSize: 16, fontWeight: '600' },
-  err: { color: '#c0392b', fontSize: 14 }
+  btnText: { color: colors.bg, fontSize: 16, fontWeight: '700' },
+  err: { color: colors.danger, fontSize: 14 }
 });

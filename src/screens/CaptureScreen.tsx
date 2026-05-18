@@ -8,6 +8,7 @@ import * as ImagePicker from 'expo-image-picker';
 import * as ImageManipulator from 'expo-image-manipulator';
 import type { ClientRow } from '../lib/supabase';
 import { enqueue } from '../lib/queue';
+import { colors, radius } from '../lib/theme';
 
 export default function CaptureScreen({
   client,
@@ -75,7 +76,7 @@ export default function CaptureScreen({
 
       <View style={styles.center}>
         {busy ? (
-          <ActivityIndicator size="large" />
+          <ActivityIndicator size="large" color={colors.accent} />
         ) : (
           <>
             <Pressable style={styles.primary} onPress={shoot}>
@@ -96,28 +97,33 @@ export default function CaptureScreen({
 }
 
 const styles = StyleSheet.create({
-  wrap: { flex: 1, backgroundColor: '#fff' },
+  wrap: { flex: 1, backgroundColor: colors.bg },
   clientBar: {
-    backgroundColor: '#f3f4f6',
+    backgroundColor: colors.bgSidebar,
     padding: 16,
     borderBottomWidth: 1,
-    borderBottomColor: '#e5e7eb'
+    borderBottomColor: colors.border
   },
-  clientLabel: { fontSize: 12, color: '#888' },
-  clientName: { fontSize: 16, fontWeight: '700' },
-  change: { position: 'absolute', right: 16, top: 22, color: '#1a56db' },
+  clientLabel: { fontSize: 12, color: colors.textDim },
+  clientName: { fontSize: 16, fontWeight: '700', color: colors.text },
+  change: { position: 'absolute', right: 16, top: 22, color: colors.accent },
   center: { flex: 1, justifyContent: 'center', alignItems: 'center', gap: 16, padding: 24 },
   primary: {
-    backgroundColor: '#1a56db',
+    backgroundColor: colors.accent,
     paddingVertical: 20,
     paddingHorizontal: 28,
-    borderRadius: 12,
+    borderRadius: radius.lg,
     width: '100%',
     alignItems: 'center'
   },
-  primaryText: { color: '#fff', fontSize: 18, fontWeight: '700' },
+  primaryText: { color: colors.bg, fontSize: 18, fontWeight: '700' },
   secondary: { paddingVertical: 12 },
-  secondaryText: { color: '#1a56db', fontSize: 16 },
-  queueBtn: { padding: 18, alignItems: 'center', borderTopWidth: 1, borderTopColor: '#eee' },
-  queueText: { color: '#374151', fontSize: 15, fontWeight: '600' }
+  secondaryText: { color: colors.accent, fontSize: 16 },
+  queueBtn: {
+    padding: 18,
+    alignItems: 'center',
+    borderTopWidth: 1,
+    borderTopColor: colors.border
+  },
+  queueText: { color: colors.textMuted, fontSize: 15, fontWeight: '600' }
 });
