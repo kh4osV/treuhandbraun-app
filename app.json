@@ -1,0 +1,30 @@
+{
+  "expo": {
+    "name": "Treuhand Braun — Belege",
+    "slug": "treuhandbraun-app",
+    "version": "0.1.0",
+    "orientation": "portrait",
+    "userInterfaceStyle": "automatic",
+    "newArchEnabled": true,
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "ch.fluketreuhand.belege",
+      "infoPlist": {
+        "NSCameraUsageDescription": "Belege fotografieren und hochladen.",
+        "NSPhotoLibraryUsageDescription": "Belege aus der Galerie hochladen."
+      }
+    },
+    "android": {
+      "package": "ch.fluketreuhand.belege",
+      "permissions": ["CAMERA"]
+    },
+    "plugins": [
+      [
+        "expo-image-picker",
+        {
+          "cameraPermission": "Belege fotografieren und hochladen."
+        }
+      ]
+    ]
+  }
+}
