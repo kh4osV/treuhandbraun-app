@@ -54,9 +54,30 @@ npx expo start            # -c falls .env geändert (Cache leeren)
    Status „Hochgeladen" + zeigt den Storage-Pfad
 4. Gegencheck: in `fluke-web-dev` unter `/intake` taucht die Datei auf
 
+## Standalone-APK (EAS Build, netzunabhängig)
+
+Kein Metro/Tunnel nötig — die App wird in der Cloud gebaut, das fertige
+APK aufs Handy geladen und redet direkt mit `fluke-web-dev`.
+
+EAS lädt die **gitignorete `.env` NICHT** mit hoch → die
+`EXPO_PUBLIC_*`-Werte stehen darum in `eas.json` (nur client-seitige
+Public-Werte; `preview` = Dev-Stack, `production` = Prod-Stack).
+EAS archiviert den **committeten** Git-Stand — vor dem Build committen.
+
+```bash
+npx eas-cli login                              # Expo-Account (expo.dev)
+npx eas-cli init                               # schreibt extra.eas.projectId in app.json
+npx eas-cli build -p android --profile preview # Cloud-Build, ~10-15 min
+```
+
+Am Ende gibt EAS eine Download-URL/QR fürs APK aus → auf dem Handy
+installieren (einmalig „Unbekannte Quellen" erlauben). `production`
+analog mit `--profile production` (liefert ein .aab für den Store).
+
 ## Status
 
 Phase 1 vollständig: Login, Mandantenwahl (RLS), Kamera/Galerie,
-Konvertierung, Offline-Queue + Retry, Verlauf. Offen/optional:
-Google-OAuth-Login, Push/Status „verarbeitet/zugeordnet",
-EAS-Build-Konfig für Store-Auslieferung.
+Konvertierung, Offline-Queue + Retry, Verlauf. EAS-Build-Config
+(`eas.json`: preview=Dev-APK, production=Prod-AAB) vorhanden.
+Offen/optional: Google-OAuth-Login, Push/Status
+„verarbeitet/zugeordnet", Store-Auslieferung.
