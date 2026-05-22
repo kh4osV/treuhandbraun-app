@@ -5,6 +5,8 @@
     "version": "0.1.0",
     "orientation": "portrait",
     "userInterfaceStyle": "dark",
+    "icon": "./assets/icon.png",
+    "backgroundColor": "#0e1320",
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "ch.fluketreuhand.belege",
@@ -15,6 +17,10 @@
     },
     "android": {
       "package": "ch.fluketreuhand.belege",
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/adaptive-icon.png",
+        "backgroundColor": "#0e1320"
+      },
       "permissions": [
         "android.permission.CAMERA",
         "android.permission.RECORD_AUDIO"
