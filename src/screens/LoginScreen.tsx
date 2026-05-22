@@ -13,14 +13,22 @@ import {
   View
 } from 'react-native';
 import { supabase } from '../lib/supabase';
+import { looksLikeToken } from '../lib/token';
 import { colors, radius } from '../lib/theme';
 
-export default function LoginScreen() {
+export default function LoginScreen({
+  onTokenLogin
+}: {
+  onTokenLogin: (token: string) => void;
+}) {
+  const [mode, setMode] = useState<'staff' | 'token'>('staff');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState<string | null>(null);
   const [showPw, setShowPw] = useState(false);
+  const [tokenInput, setTokenInput] = useState('');
+  const [tokenErr, setTokenErr] = useState<string | null>(null);
 
   async function signIn() {
     setBusy(true);
@@ -33,6 +41,16 @@ export default function LoginScreen() {
     setBusy(false);
   }
 
+  function tokenSignIn() {
+    const t = tokenInput.trim();
+    if (!looksLikeToken(t)) {
+      setTokenErr('Ungültiger Code. Ein gültiger Code beginnt mit "fit_".');
+      return;
+    }
+    setTokenErr(null);
+    onTokenLogin(t);
+  }
+
   return (
     <KeyboardAvoidingView
       style={styles.wrap}
@@ -43,45 +61,78 @@ export default function LoginScreen() {
       <Text style={styles.edition}>BELEG-UPLOAD</Text>
       <Text style={styles.sub}>Belege fotografieren & hochladen</Text>
 
-      <TextInput
-        style={styles.input}
-        placeholder="E-Mail"
-        placeholderTextColor={colors.textDim}
-        autoCapitalize="none"
-        keyboardType="email-address"
-        autoComplete="email"
-        value={email}
-        onChangeText={setEmail}
-      />
-      <View style={styles.pwRow}>
-        <TextInput
-          style={styles.pwInput}
-          placeholder="Passwort"
-          placeholderTextColor={colors.textDim}
-          secureTextEntry={!showPw}
-          autoCapitalize="none"
-          autoCorrect={false}
-          value={password}
-          onChangeText={setPassword}
-        />
-        <Pressable style={styles.pwToggle} onPress={() => setShowPw((v) => !v)} hitSlop={8}>
-          <Text style={styles.pwToggleText}>{showPw ? '🙈 verbergen' : '👁 anzeigen'}</Text>
-        </Pressable>
-      </View>
+      {mode === 'staff' ? (
+        <>
+          <TextInput
+            style={styles.input}
+            placeholder="E-Mail"
+            placeholderTextColor={colors.textDim}
+            autoCapitalize="none"
+            keyboardType="email-address"
+            autoComplete="email"
+            value={email}
+            onChangeText={setEmail}
+          />
+          <View style={styles.pwRow}>
+            <TextInput
+              style={styles.pwInput}
+              placeholder="Passwort"
+              placeholderTextColor={colors.textDim}
+              secureTextEntry={!showPw}
+              autoCapitalize="none"
+              autoCorrect={false}
+              value={password}
+              onChangeText={setPassword}
+            />
+            <Pressable style={styles.pwToggle} onPress={() => setShowPw((v) => !v)} hitSlop={8}>
+              <Text style={styles.pwToggleText}>{showPw ? '🙈 verbergen' : '👁 anzeigen'}</Text>
+            </Pressable>
+          </View>
 
-      {err ? <Text style={styles.err}>{err}</Text> : null}
+          {err ? <Text style={styles.err}>{err}</Text> : null}
 
-      <Pressable
-        style={[styles.btn, busy && styles.btnDisabled]}
-        disabled={busy}
-        onPress={signIn}
-      >
-        {busy ? (
-          <ActivityIndicator color={colors.bg} />
-        ) : (
-          <Text style={styles.btnText}>Anmelden</Text>
-        )}
-      </Pressable>
+          <Pressable
+            style={[styles.btn, busy && styles.btnDisabled]}
+            disabled={busy}
+            onPress={signIn}
+          >
+            {busy ? (
+              <ActivityIndicator color={colors.bg} />
+            ) : (
+              <Text style={styles.btnText}>Anmelden</Text>
+            )}
+          </Pressable>
+
+          <Pressable style={styles.modeSwitch} onPress={() => setMode('token')} hitSlop={8}>
+            <Text style={styles.modeSwitchText}>Als Mandant mit Code anmelden</Text>
+          </Pressable>
+        </>
+      ) : (
+        <>
+          <Text style={styles.tokenHint}>
+            Code aus der E-Mail deines Treuhänders hier einfügen.
+          </Text>
+          <TextInput
+            style={styles.input}
+            placeholder="fit_…"
+            placeholderTextColor={colors.textDim}
+            autoCapitalize="none"
+            autoCorrect={false}
+            value={tokenInput}
+            onChangeText={setTokenInput}
+          />
+
+          {tokenErr ? <Text style={styles.err}>{tokenErr}</Text> : null}
+
+          <Pressable style={styles.btn} onPress={tokenSignIn}>
+            <Text style={styles.btnText}>Anmelden</Text>
+          </Pressable>
+
+          <Pressable style={styles.modeSwitch} onPress={() => setMode('staff')} hitSlop={8}>
+            <Text style={styles.modeSwitchText}>Team-Login (E-Mail / Passwort)</Text>
+          </Pressable>
+        </>
+      )}
     </KeyboardAvoidingView>
   );
 }
@@ -144,5 +195,8 @@ const styles = StyleSheet.create({
   },
   btnDisabled: { opacity: 0.6 },
   btnText: { color: colors.bg, fontSize: 16, fontWeight: '700' },
-  err: { color: colors.danger, fontSize: 14 }
+  err: { color: colors.danger, fontSize: 14 },
+  modeSwitch: { alignItems: 'center', paddingVertical: 14, marginTop: 4 },
+  modeSwitchText: { color: colors.accent, fontSize: 14, fontWeight: '600' },
+  tokenHint: { color: colors.textMuted, fontSize: 14, textAlign: 'center', marginBottom: 4 }
 });

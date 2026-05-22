@@ -13,11 +13,13 @@ import { colors, radius } from '../lib/theme';
 export default function CaptureScreen({
   client,
   onChangeClient,
-  onOpenQueue
+  onOpenQueue,
+  tokenMode = false
 }: {
   client: ClientRow;
   onChangeClient: () => void;
   onOpenQueue: () => void;
+  tokenMode?: boolean;
 }) {
   const [busy, setBusy] = useState(false);
 
@@ -69,9 +71,9 @@ export default function CaptureScreen({
   return (
     <View style={styles.wrap}>
       <Pressable style={styles.clientBar} onPress={onChangeClient}>
-        <Text style={styles.clientLabel}>Mandant</Text>
+        <Text style={styles.clientLabel}>{tokenMode ? 'Beleg-Upload' : 'Mandant'}</Text>
         <Text style={styles.clientName}>{client.company_name ?? client.client_id}</Text>
-        <Text style={styles.change}>ändern ›</Text>
+        <Text style={styles.change}>{tokenMode ? 'abmelden ›' : 'ändern ›'}</Text>
       </Pressable>
 
       <View style={styles.center}>

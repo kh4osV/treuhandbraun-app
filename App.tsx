@@ -15,6 +15,7 @@ import {
 import { StatusBar } from 'expo-status-bar';
 import type { Session } from '@supabase/supabase-js';
 import { supabase, type ClientRow } from './src/lib/supabase';
+import { loadToken, setToken, clearToken } from './src/lib/token';
 import { loadQueue, drain } from './src/lib/queue';
 import { colors } from './src/lib/theme';
 import LoginScreen from './src/screens/LoginScreen';
@@ -26,13 +27,16 @@ type Screen = 'capture' | 'queue';
 
 export default function App() {
   const [session, setSession] = useState<Session | null>(null);
+  const [mandantToken, setMandantToken] = useState<string | null>(null);
   const [ready, setReady] = useState(false);
   const [client, setClient] = useState<ClientRow | null>(null);
   const [view, setView] = useState<Screen>('capture');
 
   useEffect(() => {
-    supabase.auth.getSession().then(({ data }) => {
-      setSession(data.session);
+    // Session UND Mandanten-Token laden, bevor das Auth-Gate entscheidet.
+    Promise.all([supabase.auth.getSession(), loadToken()]).then(([s, t]) => {
+      setSession(s.data.session);
+      setMandantToken(t);
       setReady(true);
     });
     const { data: sub } = supabase.auth.onAuthStateChange((_e, s) => {
@@ -42,6 +46,20 @@ export default function App() {
     loadQueue().then(() => drain());
     return () => sub.subscription.unsubscribe();
   }, []);
+
+  async function handleTokenLogin(t: string) {
+    await setToken(t);
+    setMandantToken(t);
+    setView('capture');
+  }
+  async function tokenLogout() {
+    await clearToken();
+    setMandantToken(null);
+  }
+
+  // Synthetischer "Mandant" für den Token-Modus: der echte client_id steckt
+  // im Token und wird serverseitig aufgelöst (Upload braucht ihn nicht).
+  const tokenClient: ClientRow = { client_id: '', company_name: 'Mein Betrieb' };
 
   if (!ready)
     return (
@@ -53,26 +71,41 @@ export default function App() {
   return (
     <SafeAreaView style={styles.safe}>
       <StatusBar style="light" backgroundColor={colors.bg} />
-      {!session ? (
-        <LoginScreen />
-      ) : !client ? (
-        <View style={{ flex: 1 }}>
-          <Header email={session.user.email ?? ''} />
-          <ClientPickerScreen
-            onPick={(c) => {
-              setClient(c);
-              setView('capture');
-            }}
+      {session ? (
+        // ── Team-User (Phase 1): Mandant wählen, dann erfassen ──
+        !client ? (
+          <View style={{ flex: 1 }}>
+            <Header email={session.user.email ?? ''} />
+            <ClientPickerScreen
+              onPick={(c) => {
+                setClient(c);
+                setView('capture');
+              }}
+            />
+          </View>
+        ) : view === 'queue' ? (
+          <QueueScreen onBack={() => setView('capture')} />
+        ) : (
+          <CaptureScreen
+            client={client}
+            onChangeClient={() => setClient(null)}
+            onOpenQueue={() => setView('queue')}
           />
-        </View>
-      ) : view === 'queue' ? (
-        <QueueScreen onBack={() => setView('capture')} />
+        )
+      ) : mandantToken ? (
+        // ── Mandant (Phase 2): kein Picker, client_id steckt im Token ──
+        view === 'queue' ? (
+          <QueueScreen onBack={() => setView('capture')} />
+        ) : (
+          <CaptureScreen
+            client={tokenClient}
+            tokenMode
+            onChangeClient={tokenLogout}
+            onOpenQueue={() => setView('queue')}
+          />
+        )
       ) : (
-        <CaptureScreen
-          client={client}
-          onChangeClient={() => setClient(null)}
-          onOpenQueue={() => setView('queue')}
-        />
+        <LoginScreen onTokenLogin={handleTokenLogin} />
       )}
     </SafeAreaView>
   );

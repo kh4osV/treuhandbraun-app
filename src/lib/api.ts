@@ -10,6 +10,7 @@
 import * as FileSystem from 'expo-file-system/legacy';
 import { UPLOAD_ENDPOINT } from './config';
 import { currentAccessToken } from './supabase';
+import { getTokenAsync } from './token';
 
 export type UploadInput = {
   fileUri: string;
@@ -28,7 +29,9 @@ function isRetryable(status: number): boolean {
 }
 
 export async function uploadReceipt(input: UploadInput): Promise<UploadResult> {
-  const token = await currentAccessToken();
+  // Mandanten-Token hat Vorrang (Phase 2): der Endpoint leitet den
+  // client_id daraus ab. Sonst das Supabase-Access-Token des Team-Users.
+  const token = (await getTokenAsync()) ?? (await currentAccessToken());
   if (!token) {
     return { ok: false, status: 401, error: 'Nicht angemeldet', retryable: false };
   }
