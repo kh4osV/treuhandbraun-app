@@ -41,7 +41,9 @@ export default function CaptureScreen({
         clientId: client.client_id,
         clientName: client.company_name ?? client.client_id
       });
-      Alert.alert('In Queue', 'Beleg wird hochgeladen, sobald Netz da ist.');
+      // Kein Bestätigungs-Dialog mehr — der Beleg geht still in die Queue,
+      // damit das Erfassen mehrerer Belege nicht durch OK-Klicks unterbrochen
+      // wird. Status/Fehler sind jederzeit im Verlauf sichtbar.
     } catch (e: any) {
       Alert.alert('Fehler', e?.message ?? 'Konnte Beleg nicht verarbeiten.');
     } finally {

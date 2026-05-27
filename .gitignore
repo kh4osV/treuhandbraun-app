@@ -6,3 +6,5 @@ web-build/
 .env
 .DS_Store
 *.tsbuildinfo
+# Google Play service-account key für `eas submit` — niemals committen
+google-service-account.json

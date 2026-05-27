@@ -89,6 +89,16 @@ export async function enqueue(src: {
   void drain();
 }
 
+// Belege, die seit über `maxAgeMs` (Default 24 h) erfasst, aber noch
+// nicht hochgeladen sind (alles ausser "done"). Wird beim App-Start
+// genutzt, um den Nutzer auf hängende Uploads hinzuweisen.
+const STALE_MS = 24 * 60 * 60 * 1000;
+
+export function staleItems(maxAgeMs: number = STALE_MS): QueueItem[] {
+  const cutoff = Date.now() - maxAgeMs;
+  return items.filter((it) => it.status !== 'done' && it.createdAt < cutoff);
+}
+
 export async function retryItem(id: string): Promise<void> {
   const it = items.find((x) => x.id === id);
   if (!it) return;

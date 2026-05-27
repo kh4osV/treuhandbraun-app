@@ -2,7 +2,7 @@
   "expo": {
     "name": "Fluke",
     "slug": "treuhandbraun-app",
-    "version": "0.1.0",
+    "version": "1.0.0",
     "orientation": "portrait",
     "userInterfaceStyle": "dark",
     "icon": "./assets/icon.png",
@@ -22,8 +22,7 @@
         "backgroundColor": "#0e1320"
       },
       "permissions": [
-        "android.permission.CAMERA",
-        "android.permission.RECORD_AUDIO"
+        "android.permission.CAMERA"
       ],
       "runtimeVersion": {
         "policy": "appVersion"

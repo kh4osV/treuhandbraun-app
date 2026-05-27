@@ -4,6 +4,7 @@
 import { useEffect, useState } from 'react';
 import {
   ActivityIndicator,
+  Alert,
   Platform,
   Pressable,
   SafeAreaView,
@@ -16,7 +17,7 @@ import { StatusBar } from 'expo-status-bar';
 import type { Session } from '@supabase/supabase-js';
 import { supabase, type ClientRow } from './src/lib/supabase';
 import { loadToken, setToken, clearToken } from './src/lib/token';
-import { loadQueue, drain } from './src/lib/queue';
+import { loadQueue, drain, staleItems } from './src/lib/queue';
 import { colors } from './src/lib/theme';
 import LoginScreen from './src/screens/LoginScreen';
 import ClientPickerScreen from './src/screens/ClientPickerScreen';
@@ -43,7 +44,21 @@ export default function App() {
       setSession(s);
       if (!s) setClient(null);
     });
-    loadQueue().then(() => drain());
+    // Queue laden, hochladen — und beim Start warnen, falls Belege seit
+    // über 24 h hängen (z. B. dauerhaft kein Netz oder ein Server-Fehler).
+    loadQueue().then(() => {
+      const stale = staleItems();
+      if (stale.length > 0) {
+        Alert.alert(
+          'Belege noch nicht hochgeladen',
+          `${stale.length} Beleg${stale.length === 1 ? '' : 'e'} ` +
+            `${stale.length === 1 ? 'konnte' : 'konnten'} seit über 24 Stunden ` +
+            'nicht hochgeladen werden. Bitte Netzverbindung prüfen und im ' +
+            'Verlauf den Status kontrollieren.'
+        );
+      }
+      void drain();
+    });
     return () => sub.subscription.unsubscribe();
   }, []);
 

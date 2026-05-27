@@ -26,9 +26,27 @@
         "EXPO_PUBLIC_INTAKE_BASE_URL": "https://fluke-web.fluketreuhand.workers.dev"
       },
       "channel": "production"
+    },
+    "production-apk": {
+      "distribution": "internal",
+      "android": {
+        "buildType": "apk"
+      },
+      "env": {
+        "EXPO_PUBLIC_SUPABASE_URL": "https://xzhwtovxsiywsrvuwhpz.supabase.co",
+        "EXPO_PUBLIC_SUPABASE_PUBLISHABLE_KEY": "sb_publishable_q8tb7o6K-u_LL_s1iqvVLQ_1Pwhlemp",
+        "EXPO_PUBLIC_INTAKE_BASE_URL": "https://fluke-web.fluketreuhand.workers.dev"
+      },
+      "channel": "production"
     }
   },
   "submit": {
-    "production": {}
+    "production": {
+      "android": {
+        "serviceAccountKeyPath": "./google-service-account.json",
+        "track": "internal",
+        "releaseStatus": "draft"
+      }
+    }
   }
 }
