@@ -73,7 +73,7 @@ export default function CaptureScreen({
   return (
     <View style={styles.wrap}>
       <Pressable style={styles.clientBar} onPress={onChangeClient}>
-        <Text style={styles.clientLabel}>{tokenMode ? 'Beleg-Upload' : 'Mandant'}</Text>
+        <Text style={styles.clientLabel}>{tokenMode ? 'Angemeldet' : 'Mandant'}</Text>
         <Text style={styles.clientName}>{client.company_name ?? client.client_id}</Text>
         <Text style={styles.change}>{tokenMode ? 'abmelden ›' : 'ändern ›'}</Text>
       </Pressable>

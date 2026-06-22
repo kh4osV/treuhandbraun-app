@@ -73,8 +73,9 @@ export default function App() {
   }
 
   // Synthetischer "Mandant" für den Token-Modus: der echte client_id steckt
-  // im Token und wird serverseitig aufgelöst (Upload braucht ihn nicht).
-  const tokenClient: ClientRow = { client_id: '', company_name: 'Mein Betrieb' };
+  // im Token und wird serverseitig aufgelöst (Upload braucht ihn nicht). Kein
+  // Firmenname clientseitig bekannt → neutrale Beschriftung statt "Mein Betrieb".
+  const tokenClient: ClientRow = { client_id: '', company_name: 'Beleg-Upload' };
 
   if (!ready)
     return (
