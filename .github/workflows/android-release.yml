@@ -1,0 +1,126 @@
+name: Android Release (APK)
+
+# Baut das Android-APK per EAS (Expo Cloud) und hängt es an ein
+# GitHub-Release an. Der Download-Link ist damit ein GitHub-Release-Asset
+# und läuft — anders als der von Expo gehostete EAS-Link (~30 Tage) —
+# nicht ab.
+#
+# Voraussetzung (einmalig):
+#   Repo → Settings → Secrets and variables → Actions → New repository secret
+#     Name:  EXPO_TOKEN
+#     Wert:  Access-Token aus https://expo.dev/settings/access-tokens
+#            (Account "kh4osv", der auch das EAS-Projekt besitzt)
+#
+# Auslösen:
+#   • Manuell: Actions → "Android Release (APK)" → Run workflow
+#   • Automatisch: Git-Tag "v*" pushen (z. B. git tag v1.0.1 && git push origin v1.0.1)
+
+on:
+  workflow_dispatch:
+    inputs:
+      profile:
+        description: "EAS-Build-Profil"
+        type: choice
+        default: preview
+        options:
+          - preview          # Dev-Stack, direkt installierbares APK
+          - production-apk    # Prod-Stack, direkt installierbares APK
+  push:
+    tags:
+      - "v*"
+
+permissions:
+  contents: write            # nötig für "gh release create"
+
+jobs:
+  build:
+    name: EAS Build + GitHub Release
+    runs-on: ubuntu-latest
+    env:
+      GH_TOKEN: ${{ github.token }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Setup EAS / Expo
+        uses: expo/expo-github-action@v8
+        with:
+          eas-version: latest
+          token: ${{ secrets.EXPO_TOKEN }}
+
+      - name: Fail early if EXPO_TOKEN missing
+        run: |
+          if [ -z "${{ secrets.EXPO_TOKEN }}" ]; then
+            echo "::error::EXPO_TOKEN-Secret fehlt. In Repo-Settings anlegen (siehe Workflow-Kommentar)."
+            exit 1
+          fi
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Resolve build profile
+        id: profile
+        run: echo "value=${{ github.event.inputs.profile || 'preview' }}" >> "$GITHUB_OUTPUT"
+
+      - name: Read app version
+        id: appver
+        run: |
+          VERSION=$(node -p "require('./app.json').expo.version")
+          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+          echo "App-Version: $VERSION"
+
+      - name: Run EAS build (Android APK)
+        id: build
+        run: |
+          set -euo pipefail
+          echo "Starte EAS-Build (Profil: ${{ steps.profile.outputs.value }}) …"
+          BUILD_JSON=$(eas build \
+            --platform android \
+            --profile "${{ steps.profile.outputs.value }}" \
+            --non-interactive \
+            --wait \
+            --json)
+          echo "$BUILD_JSON" > build.json
+          APK_URL=$(node -p "JSON.parse(require('fs').readFileSync('build.json','utf8'))[0].artifacts.applicationArchiveUrl")
+          if [ -z "$APK_URL" ] || [ "$APK_URL" = "undefined" ]; then
+            echo "::error::Keine APK-URL im EAS-Build-Ergebnis gefunden."
+            cat build.json
+            exit 1
+          fi
+          echo "apk_url=$APK_URL" >> "$GITHUB_OUTPUT"
+
+      - name: Download APK artifact
+        run: |
+          set -euo pipefail
+          curl -fL --retry 4 --retry-delay 2 \
+            -o "fluke-${{ steps.appver.outputs.version }}.apk" \
+            "${{ steps.build.outputs.apk_url }}"
+          ls -lh fluke-*.apk
+
+      - name: Determine release tag
+        id: tag
+        run: |
+          if [ "${{ github.ref_type }}" = "tag" ]; then
+            echo "value=${{ github.ref_name }}" >> "$GITHUB_OUTPUT"
+          else
+            echo "value=v${{ steps.appver.outputs.version }}-${{ github.run_number }}" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Create GitHub Release with APK
+        run: |
+          set -euo pipefail
+          gh release create "${{ steps.tag.outputs.value }}" \
+            "fluke-${{ steps.appver.outputs.version }}.apk" \
+            --title "Fluke ${{ steps.tag.outputs.value }} (Android)" \
+            --notes "Automatischer Android-APK-Build via EAS (Profil: ${{ steps.profile.outputs.value }}).
+
+          **Installation:** APK unten herunterladen → auf dem Android-Gerät öffnen → einmalig „Unbekannte Quellen / Diese Quelle erlauben\" bestätigen.
+
+          Dieser Download-Link liegt auf GitHub und läuft nicht ab." \
+            --latest

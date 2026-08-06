@@ -74,6 +74,32 @@ Am Ende gibt EAS eine Download-URL/QR fürs APK aus → auf dem Handy
 installieren (einmalig „Unbekannte Quellen" erlauben). `production`
 analog mit `--profile production` (liefert ein .aab für den Store).
 
+> ⚠️ Der von EAS gehostete Download-Link läuft auf dem Free-Tier nach
+> ~30 Tagen ab. Für einen **dauerhaften** Link siehe unten.
+
+## Release per GitHub Actions (dauerhafter Download-Link)
+
+`.github/workflows/android-release.yml` baut das APK per EAS in der Cloud,
+lädt es herunter und hängt es an ein **GitHub-Release** an. Der
+Download-Link ist damit ein GitHub-Release-Asset und **läuft nicht ab**
+(im Gegensatz zum von Expo gehosteten EAS-Link).
+
+**Einmalige Einrichtung** — Expo-Access-Token als Repo-Secret hinterlegen:
+
+1. Token erzeugen: <https://expo.dev/settings/access-tokens> (Account
+   `kh4osv`, dem auch das EAS-Projekt gehört).
+2. Repo → **Settings → Secrets and variables → Actions → New repository
+   secret**: Name `EXPO_TOKEN`, Wert = das Token.
+
+**Release auslösen:**
+
+- Manuell: **Actions → „Android Release (APK)" → Run workflow** (Profil
+  `preview` = Dev-Stack, `production-apk` = Prod-Stack).
+- Automatisch: Version-Tag pushen — `git tag v1.0.1 && git push origin v1.0.1`.
+
+Der Build dauert ~10–15 min; danach erscheint das Release unter
+**Releases** mit dem APK als Asset (fester Download-Link).
+
 ## Status
 
 Phase 1 vollständig: Login, Mandantenwahl (RLS), Kamera/Galerie,
