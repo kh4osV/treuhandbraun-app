@@ -8,7 +8,7 @@
 
 // SDK 55: uploadAsync/FileSystemUploadType leben in /legacy.
 import * as FileSystem from 'expo-file-system/legacy';
-import { UPLOAD_ENDPOINT } from './config';
+import { ACCOUNTS_ENDPOINT, UPLOAD_ENDPOINT } from './config';
 import { currentAccessToken } from './supabase';
 import { getTokenAsync } from './token';
 
@@ -17,7 +17,35 @@ export type UploadInput = {
   fileName: string;
   mime: string;
   clientId: string;
+  // FR 06.08.2026 #20: selbst gewähltes Sachkonto — überschreibt Regel und KI.
+  accountNumber?: number | null;
+  // FR 06.08.2026 #19: privat/bar bezahlt → Gegenkonto statt Bank. Welches
+  // Konto das ist, entscheidet der Treuhänder pro Mandant in Fluke; die App
+  // schickt nur den Haken.
+  privatePaid?: boolean;
 };
+
+export type IntakeAccount = { account_number: number; account_name: string | null };
+
+/**
+ * Kurzliste des Kontenplans für die Sachkonto-Auswahl. Fehler sind hier nie
+ * fatal: ohne Liste wird eben ohne Kontovorgabe hochgeladen, wie bisher.
+ */
+export async function fetchIntakeAccounts(clientId: string): Promise<IntakeAccount[]> {
+  const token = (await getTokenAsync()) ?? (await currentAccessToken());
+  if (!token) return [];
+  try {
+    const res = await fetch(
+      `${ACCOUNTS_ENDPOINT}?${new URLSearchParams({ client_id: clientId }).toString()}`,
+      { headers: { Authorization: `Bearer ${token}` } }
+    );
+    if (!res.ok) return [];
+    const body = await res.json();
+    return Array.isArray(body?.accounts) ? (body.accounts as IntakeAccount[]) : [];
+  } catch {
+    return [];
+  }
+}
 
 export type UploadResult =
   | { ok: true; path: string }
@@ -36,10 +64,15 @@ export async function uploadReceipt(input: UploadInput): Promise<UploadResult> {
     return { ok: false, status: 401, error: 'Nicht angemeldet', retryable: false };
   }
 
-  const qs = new URLSearchParams({
+  const params: Record<string, string> = {
     client_id: input.clientId,
     filename: input.fileName
-  }).toString();
+  };
+  // Kontovorgaben nur mitschicken, wenn wirklich gewählt — ein leerer
+  // Parameter würde serverseitig nur zu einem stillen null werden.
+  if (input.accountNumber != null) params.account_number = String(input.accountNumber);
+  if (input.privatePaid) params.private_paid = '1';
+  const qs = new URLSearchParams(params).toString();
 
   try {
     const res = await FileSystem.uploadAsync(`${UPLOAD_ENDPOINT}?${qs}`, input.fileUri, {

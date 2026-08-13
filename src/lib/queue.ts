@@ -28,6 +28,11 @@ export type QueueItem = {
   status: QueueStatus;
   lastError?: string;
   remotePath?: string;
+  // Kontovorgaben aus der Erfassung (FR 06.08.2026 #19/#20). Optional —
+  // Einträge aus älteren App-Versionen haben sie nicht.
+  accountNumber?: number | null;
+  accountLabel?: string | null;
+  privatePaid?: boolean;
 };
 
 type Listener = (items: QueueItem[]) => void;
@@ -67,6 +72,9 @@ export async function enqueue(src: {
   mime: string;
   clientId: string;
   clientName: string;
+  accountNumber?: number | null;
+  accountLabel?: string | null;
+  privatePaid?: boolean;
 }): Promise<void> {
   await loadQueue();
   const id = `${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
@@ -82,7 +90,10 @@ export async function enqueue(src: {
     clientName: src.clientName,
     createdAt: Date.now(),
     attempts: 0,
-    status: 'pending'
+    status: 'pending',
+    accountNumber: src.accountNumber ?? null,
+    accountLabel: src.accountLabel ?? null,
+    privatePaid: src.privatePaid === true
   });
   await persist();
   emit();
@@ -147,7 +158,9 @@ export async function drain(): Promise<void> {
         fileUri: it.fileUri,
         fileName: it.fileName,
         mime: it.mime,
-        clientId: it.clientId
+        clientId: it.clientId,
+        accountNumber: it.accountNumber ?? null,
+        privatePaid: it.privatePaid === true
       });
 
       if (res.ok) {
