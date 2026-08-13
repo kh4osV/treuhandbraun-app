@@ -28,3 +28,6 @@ export const INTAKE_BASE_URL = req(
 ).replace(/\/+$/, '');
 
 export const UPLOAD_ENDPOINT = `${INTAKE_BASE_URL}/api/intake/upload`;
+
+// Kurzliste des Kontenplans für die Sachkonto-Auswahl (FR 06.08.2026 #20).
+export const ACCOUNTS_ENDPOINT = `${INTAKE_BASE_URL}/api/intake/accounts`;
