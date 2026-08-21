@@ -32,6 +32,9 @@ export default function CaptureScreen({
   tokenMode?: boolean;
 }) {
   const [busy, setBusy] = useState(false);
+  // FR 21.08.2026: Mehrfachauswahl aus der Galerie — beim Stapel zeigt der
+  // Spinner, der wievielte Beleg gerade verarbeitet wird.
+  const [progress, setProgress] = useState<{ done: number; total: number } | null>(null);
   // FR 11.08.2026 #22: Serien-Aufnahme. Solange die Serie läuft, öffnet sich
   // die Kamera nach jedem Bild sofort wieder — beendet wird sie mit „Fertig"
   // oder indem der Kunde die Kamera abbricht.
@@ -67,36 +70,77 @@ export default function CaptureScreen({
     setPrivatePaid(false);
   }, [client.client_id]);
 
+  // Ein Bild aufbereiten und in die Queue legen. Wirft bei Fehlern — die
+  // Aufrufer entscheiden, ob das einzeln oder gesammelt gemeldet wird.
+  async function processAsset(asset: ImagePicker.ImagePickerAsset) {
+    // Lange Kante auf 2000px, JPEG q70 — reicht für OCR/Gemini,
+    // konvertiert HEIC mit.
+    const out = await ImageManipulator.manipulateAsync(
+      asset.uri,
+      [{ resize: { width: 2000 } }],
+      { compress: 0.7, format: ImageManipulator.SaveFormat.JPEG }
+    );
+    // Millisekunden, nicht nur Sekunden: bei einem Galerie-Stapel entstehen
+    // mehrere Belege pro Sekunde — gleiche Dateinamen könnte der Endpoint
+    // mit 409 quittieren (nicht retrybar).
+    const ts = new Date().toISOString().replace(/[:.]/g, '-').slice(0, 23);
+    await enqueue({
+      fileUri: out.uri,
+      fileName: `beleg_${ts}.jpg`,
+      mime: 'image/jpeg',
+      clientId: client.client_id,
+      clientName: client.company_name ?? client.client_id,
+      accountNumber: account?.account_number ?? null,
+      accountLabel: account ? `${account.account_number} ${account.account_name ?? ''}`.trim() : null,
+      // Nur der Haken — welches Gegenkonto „privat bezahlt" bedeutet,
+      // entscheidet der Treuhänder pro Mandant in Fluke.
+      privatePaid
+    });
+    // Kein Bestätigungs-Dialog — der Beleg geht still in die Queue, damit
+    // das Erfassen mehrerer Belege nicht durch OK-Klicks unterbrochen wird.
+    // Status/Fehler sind jederzeit im Verlauf sichtbar.
+  }
+
   async function handle(asset: ImagePicker.ImagePickerAsset) {
     setBusy(true);
     try {
-      // Lange Kante auf 2000px, JPEG q70 — reicht für OCR/Gemini,
-      // konvertiert HEIC mit.
-      const out = await ImageManipulator.manipulateAsync(
-        asset.uri,
-        [{ resize: { width: 2000 } }],
-        { compress: 0.7, format: ImageManipulator.SaveFormat.JPEG }
-      );
-      const ts = new Date().toISOString().replace(/[:.]/g, '-').slice(0, 19);
-      await enqueue({
-        fileUri: out.uri,
-        fileName: `beleg_${ts}.jpg`,
-        mime: 'image/jpeg',
-        clientId: client.client_id,
-        clientName: client.company_name ?? client.client_id,
-        accountNumber: account?.account_number ?? null,
-        accountLabel: account ? `${account.account_number} ${account.account_name ?? ''}`.trim() : null,
-        // Nur der Haken — welches Gegenkonto „privat bezahlt" bedeutet,
-        // entscheidet der Treuhänder pro Mandant in Fluke.
-        privatePaid
-      });
-      // Kein Bestätigungs-Dialog — der Beleg geht still in die Queue, damit
-      // das Erfassen mehrerer Belege nicht durch OK-Klicks unterbrochen wird.
-      // Status/Fehler sind jederzeit im Verlauf sichtbar.
+      await processAsset(asset);
     } catch (e: any) {
       Alert.alert('Fehler', e?.message ?? 'Konnte Beleg nicht verarbeiten.');
     } finally {
       setBusy(false);
+    }
+  }
+
+  // Stapel aus der Galerie: nacheinander verarbeiten (schont den Speicher),
+  // Fehler sammeln und am Ende EINMAL melden statt pro Bild.
+  async function handleMany(assets: ImagePicker.ImagePickerAsset[]) {
+    if (assets.length === 1) {
+      await handle(assets[0]);
+      return;
+    }
+    setBusy(true);
+    setProgress({ done: 0, total: assets.length });
+    let failed = 0;
+    try {
+      for (let i = 0; i < assets.length; i++) {
+        try {
+          await processAsset(assets[i]);
+        } catch {
+          failed += 1;
+        }
+        setProgress({ done: i + 1, total: assets.length });
+      }
+    } finally {
+      setProgress(null);
+      setBusy(false);
+    }
+    if (failed > 0) {
+      Alert.alert(
+        'Nicht alle Bilder übernommen',
+        `${assets.length - failed} von ${assets.length} Bildern sind in der Queue, ` +
+          `${failed} konnten nicht verarbeitet werden.`
+      );
     }
   }
 
@@ -120,12 +164,18 @@ export default function CaptureScreen({
   }
 
   async function pick() {
+    // FR 21.08.2026: mehrere Bilder auf einmal — ein Kunde hat die Belege
+    // eines Monats im Album und will sie nicht einzeln antippen.
+    // selectionLimit: 0 = Systemmaximum.
     const r = await ImagePicker.launchImageLibraryAsync({
-      mediaTypes: ImagePicker.MediaTypeOptions.Images,
+      mediaTypes: ['images'],
+      allowsMultipleSelection: true,
+      selectionLimit: 0,
+      orderedSelection: true,
       quality: 1,
       exif: false
     });
-    if (!r.canceled && r.assets[0]) await handle(r.assets[0]);
+    if (!r.canceled && r.assets.length > 0) await handleMany(r.assets);
   }
 
   function finishSeries() {
@@ -142,7 +192,15 @@ export default function CaptureScreen({
 
       <ScrollView contentContainerStyle={styles.center}>
         {busy ? (
-          <ActivityIndicator size="large" color={colors.accent} />
+          <>
+            <ActivityIndicator size="large" color={colors.accent} />
+            {progress && (
+              <Text style={styles.seriesText}>
+                Beleg {progress.done + (progress.done < progress.total ? 1 : 0)} von{' '}
+                {progress.total} wird verarbeitet …
+              </Text>
+            )}
+          </>
         ) : (
           <>
             {/* FR 11.08.2026 #21 */}
@@ -169,7 +227,7 @@ export default function CaptureScreen({
             )}
 
             <Pressable style={styles.secondary} onPress={pick}>
-              <Text style={styles.secondaryText}>Aus Galerie wählen</Text>
+              <Text style={styles.secondaryText}>Aus Galerie wählen (auch mehrere)</Text>
             </Pressable>
 
             {/* FR 06.08.2026 #19/#20 — nur zeigen, wenn der Mandant eine
