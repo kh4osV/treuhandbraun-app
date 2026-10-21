@@ -14,6 +14,14 @@ name: Android Release (APK)
 # Auslösen:
 #   • Manuell: Actions → "Android Release (APK)" → Run workflow
 #   • Automatisch: Git-Tag "v*" pushen (z. B. git tag v1.0.1 && git push origin v1.0.1)
+#
+# Profil: Vorgabe und Tag-Push bauen IMMER production-apk (Prod-Stack). Ein
+# preview-Build (Dev-Stack) muss bewusst gewählt werden und erscheint nur als
+# Pre-Release mit "-dev" in Tag und Dateiname, nie als "Latest" — die
+# Release-Seite ist der Download-Link für Kunden. Ein Dev-Build lädt nach
+# fluke-web-dev hoch; ein dort eingegebener Prod-Mandanten-Code wird mit 401
+# abgelehnt, und die Belege kommen nie in der Buchhaltung an (Wyland,
+# 10/2026: v1.0.1-1 war ein preview-Build und als "Latest" markiert).
 
 on:
   workflow_dispatch:
@@ -21,10 +29,10 @@ on:
       profile:
         description: "EAS-Build-Profil"
         type: choice
-        default: preview
+        default: production-apk
         options:
-          - preview          # Dev-Stack, direkt installierbares APK
-          - production-apk    # Prod-Stack, direkt installierbares APK
+          - production-apk    # Prod-Stack, direkt installierbares APK (für Kunden)
+          - preview          # Dev-Stack, nur zum Testen — wird Pre-Release
   push:
     tags:
       - "v*"
@@ -64,9 +72,20 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
+      # Tag-Push hat keine inputs → production-apk. "suffix" landet in Tag und
+      # Dateiname, damit ein Dev-APK nie wie ein Kunden-APK aussieht.
       - name: Resolve build profile
         id: profile
-        run: echo "value=${{ github.event.inputs.profile || 'preview' }}" >> "$GITHUB_OUTPUT"
+        run: |
+          PROFILE="${{ github.event.inputs.profile || 'production-apk' }}"
+          echo "value=$PROFILE" >> "$GITHUB_OUTPUT"
+          if [ "$PROFILE" = "production-apk" ]; then
+            echo "dev=false" >> "$GITHUB_OUTPUT"
+            echo "suffix=" >> "$GITHUB_OUTPUT"
+          else
+            echo "dev=true" >> "$GITHUB_OUTPUT"
+            echo "suffix=-dev" >> "$GITHUB_OUTPUT"
+          fi
 
       - name: Read app version
         id: appver
@@ -99,7 +118,7 @@ jobs:
         run: |
           set -euo pipefail
           curl -fL --retry 4 --retry-delay 2 \
-            -o "fluke-${{ steps.appver.outputs.version }}.apk" \
+            -o "fluke-${{ steps.appver.outputs.version }}${{ steps.profile.outputs.suffix }}.apk" \
             "${{ steps.build.outputs.apk_url }}"
           ls -lh fluke-*.apk
 
@@ -109,10 +128,11 @@ jobs:
           if [ "${{ github.ref_type }}" = "tag" ]; then
             echo "value=${{ github.ref_name }}" >> "$GITHUB_OUTPUT"
           else
-            echo "value=v${{ steps.appver.outputs.version }}-${{ github.run_number }}" >> "$GITHUB_OUTPUT"
+            echo "value=v${{ steps.appver.outputs.version }}${{ steps.profile.outputs.suffix }}-${{ github.run_number }}" >> "$GITHUB_OUTPUT"
           fi
 
-      - name: Create GitHub Release with APK
+      - name: Create GitHub Release with APK (Prod)
+        if: steps.profile.outputs.dev == 'false'
         run: |
           set -euo pipefail
           gh release create "${{ steps.tag.outputs.value }}" \
@@ -124,3 +144,16 @@ jobs:
 
           Dieser Download-Link liegt auf GitHub und läuft nicht ab." \
             --latest
+
+      - name: Create GitHub Pre-Release with APK (Dev)
+        if: steps.profile.outputs.dev == 'true'
+        run: |
+          set -euo pipefail
+          gh release create "${{ steps.tag.outputs.value }}" \
+            "fluke-${{ steps.appver.outputs.version }}-dev.apk" \
+            --title "Fluke ${{ steps.tag.outputs.value }} (Android, TESTVERSION Dev)" \
+            --notes "⚠️ **Testversion gegen den Dev-Stack — nicht an Mandanten weitergeben.** Belege aus dieser App landen in der Dev-Umgebung, nicht in der Buchhaltung; Prod-Mandanten-Codes werden abgelehnt.
+
+          Automatischer Android-APK-Build via EAS (Profil: ${{ steps.profile.outputs.value }})." \
+            --prerelease \
+            --latest=false
