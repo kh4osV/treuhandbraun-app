@@ -47,6 +47,40 @@ export async function fetchIntakeAccounts(clientId: string): Promise<IntakeAccou
   }
 }
 
+export type TokenCheck =
+  | { ok: true; clientId: string }
+  | { ok: false; reason: 'invalid' | 'unreachable'; error: string };
+
+/**
+ * Prüft einen Mandanten-Code am Server. Der Login prüfte früher nur das
+ * Prefix — ein unbekannter oder widerrufener Code (oder ein Prod-Code in einem
+ * Dev-Build) fiel erst beim Upload auf, als 401 im Verlauf, und kein Beleg kam
+ * an. /api/intake/accounts nimmt dieselbe Auth wie der Upload und liefert den
+ * client_id aus dem Token, ohne etwas zu schreiben.
+ *
+ * "invalid" nur bei 401/403 — das ist eine klare Absage. Alles andere
+ * (kein Netz, 5xx, unerwartete Antwort) ist "unreachable": der Code ist dann
+ * weder bestätigt noch abgelehnt.
+ */
+export async function verifyMandantToken(token: string): Promise<TokenCheck> {
+  try {
+    const res = await fetch(`${ACCOUNTS_ENDPOINT}?limit=1`, {
+      headers: { Authorization: `Bearer ${token}` }
+    });
+    if (res.status === 401 || res.status === 403) {
+      return { ok: false, reason: 'invalid', error: `HTTP ${res.status}` };
+    }
+    if (!res.ok) return { ok: false, reason: 'unreachable', error: `HTTP ${res.status}` };
+    const body = await res.json();
+    if (typeof body?.client_id !== 'string' || !body.client_id) {
+      return { ok: false, reason: 'unreachable', error: 'unerwartete Antwort' };
+    }
+    return { ok: true, clientId: body.client_id };
+  } catch (e: any) {
+    return { ok: false, reason: 'unreachable', error: e?.message ?? 'Netzwerkfehler' };
+  }
+}
+
 export type UploadResult =
   | { ok: true; path: string }
   | { ok: false; status: number; error: string; retryable: boolean };
@@ -59,7 +93,8 @@ function isRetryable(status: number): boolean {
 export async function uploadReceipt(input: UploadInput): Promise<UploadResult> {
   // Mandanten-Token hat Vorrang (Phase 2): der Endpoint leitet den
   // client_id daraus ab. Sonst das Supabase-Access-Token des Team-Users.
-  const token = (await getTokenAsync()) ?? (await currentAccessToken());
+  const mandantToken = await getTokenAsync();
+  const token = mandantToken ?? (await currentAccessToken());
   if (!token) {
     return { ok: false, status: 401, error: 'Nicht angemeldet', retryable: false };
   }
@@ -93,6 +128,15 @@ export async function uploadReceipt(input: UploadInput): Promise<UploadResult> {
 
     if (res.status === 200 && parsed.ok) {
       return { ok: true, path: parsed.path as string };
+    }
+    // Ein nacktes "unauthorized" im Verlauf sagt der Kundin nicht, was zu tun ist.
+    if (res.status === 401 && mandantToken) {
+      return {
+        ok: false,
+        status: 401,
+        error: 'Code ungültig oder widerrufen. Bitte abmelden und mit einem neuen Code anmelden.',
+        retryable: false
+      };
     }
     return {
       ok: false,

@@ -14,6 +14,8 @@ import {
 } from 'react-native';
 import { supabase } from '../lib/supabase';
 import { looksLikeToken } from '../lib/token';
+import { verifyMandantToken } from '../lib/api';
+import { IS_DEV_BUILD } from '../lib/config';
 import { colors, radius } from '../lib/theme';
 
 export default function LoginScreen({
@@ -41,14 +43,31 @@ export default function LoginScreen({
     setBusy(false);
   }
 
-  function tokenSignIn() {
+  // Code erst am Server prüfen, dann speichern — sonst sieht der Login gut
+  // aus und jeder Beleg scheitert später mit 401 im Verlauf.
+  async function tokenSignIn() {
     const t = tokenInput.trim();
     if (!looksLikeToken(t)) {
       setTokenErr('Ungültiger Code. Ein gültiger Code beginnt mit "fit_".');
       return;
     }
     setTokenErr(null);
-    onTokenLogin(t);
+    setBusy(true);
+    const check = await verifyMandantToken(t);
+    setBusy(false);
+    if (check.ok) {
+      onTokenLogin(t);
+    } else if (check.reason === 'invalid') {
+      setTokenErr(
+        IS_DEV_BUILD
+          ? 'Dieser Code wird hier nicht akzeptiert. Das ist eine Testversion der App — Codes aus der Buchhaltung funktionieren nur in der regulären App.'
+          : 'Dieser Code ist ungültig oder wurde widerrufen. Bitte bei deinem Treuhänder einen neuen Code anfordern.'
+      );
+    } else {
+      setTokenErr(
+        `Der Code konnte nicht geprüft werden (${check.error}). Bitte mit Internetverbindung erneut versuchen.`
+      );
+    }
   }
 
   return (
@@ -124,8 +143,16 @@ export default function LoginScreen({
 
           {tokenErr ? <Text style={styles.err}>{tokenErr}</Text> : null}
 
-          <Pressable style={styles.btn} onPress={tokenSignIn}>
-            <Text style={styles.btnText}>Anmelden</Text>
+          <Pressable
+            style={[styles.btn, busy && styles.btnDisabled]}
+            disabled={busy}
+            onPress={tokenSignIn}
+          >
+            {busy ? (
+              <ActivityIndicator color={colors.bg} />
+            ) : (
+              <Text style={styles.btnText}>Anmelden</Text>
+            )}
           </Pressable>
 
           <Pressable style={styles.modeSwitch} onPress={() => setMode('staff')} hitSlop={8}>
