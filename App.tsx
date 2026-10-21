@@ -19,6 +19,7 @@ import { supabase, type ClientRow } from './src/lib/supabase';
 import { loadToken, setToken, clearToken } from './src/lib/token';
 import { loadQueue, drain, staleItems } from './src/lib/queue';
 import { verifyMandantToken } from './src/lib/api';
+import { INTAKE_BASE_URL, IS_DEV_BUILD } from './src/lib/config';
 import { colors } from './src/lib/theme';
 import LoginScreen from './src/screens/LoginScreen';
 import ClientPickerScreen from './src/screens/ClientPickerScreen';
@@ -106,6 +107,7 @@ export default function App() {
   return (
     <SafeAreaView style={styles.safe}>
       <StatusBar style="light" backgroundColor={colors.bg} />
+      {IS_DEV_BUILD ? <DevBanner /> : null}
       {session ? (
         // ── Team-User (Phase 1): Mandant wählen, dann erfassen ──
         !client ? (
@@ -143,6 +145,18 @@ export default function App() {
         <LoginScreen onTokenLogin={handleTokenLogin} />
       )}
     </SafeAreaView>
+  );
+}
+
+// Auf jedem Screen sichtbar, damit ein Dev-APK beim Kunden sofort auffällt.
+function DevBanner() {
+  return (
+    <View style={styles.devBanner}>
+      <Text style={styles.devBannerTitle}>TESTVERSION · Belege landen nicht in der Buchhaltung</Text>
+      <Text style={styles.devBannerHost} numberOfLines={1}>
+        {INTAKE_BASE_URL.replace(/^https?:\/\//, '')}
+      </Text>
+    </View>
   );
 }
 
@@ -186,5 +200,13 @@ const styles = StyleSheet.create({
     borderBottomColor: colors.border
   },
   headerEmail: { flex: 1, color: colors.textMuted, fontSize: 13 },
+  devBanner: {
+    backgroundColor: colors.danger,
+    paddingHorizontal: 16,
+    paddingVertical: 6,
+    alignItems: 'center'
+  },
+  devBannerTitle: { color: colors.bg, fontSize: 12, fontWeight: '700' },
+  devBannerHost: { color: colors.bg, fontSize: 11 },
   logout: { color: colors.danger, fontSize: 14, fontWeight: '600' }
 });

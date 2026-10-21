@@ -31,3 +31,11 @@ export const UPLOAD_ENDPOINT = `${INTAKE_BASE_URL}/api/intake/upload`;
 
 // Kurzliste des Kontenplans für die Sachkonto-Auswahl (FR 06.08.2026 #20).
 export const ACCOUNTS_ENDPOINT = `${INTAKE_BASE_URL}/api/intake/accounts`;
+
+// Dev-Build → Banner "Testversion" auf jedem Screen. eas.json setzt
+// EXPO_PUBLIC_APP_ENV=prod nur in den Prod-Profilen; alles andere (preview,
+// lokale .env) gilt als Dev. Zusätzlich zählt die Ziel-URL, damit ein
+// falsch gesetztes "prod" einen Dev-Upload nicht verdeckt. Ein Dev-APK beim
+// Kunden lädt sonst unbemerkt in die Dev-Umgebung (Wyland, 10/2026).
+export const IS_DEV_BUILD =
+  process.env.EXPO_PUBLIC_APP_ENV !== 'prod' || /\/\/fluke-web-dev\./.test(INTAKE_BASE_URL);

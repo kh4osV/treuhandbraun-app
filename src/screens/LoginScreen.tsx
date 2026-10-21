@@ -15,6 +15,7 @@ import {
 import { supabase } from '../lib/supabase';
 import { looksLikeToken } from '../lib/token';
 import { verifyMandantToken } from '../lib/api';
+import { IS_DEV_BUILD } from '../lib/config';
 import { colors, radius } from '../lib/theme';
 
 export default function LoginScreen({
@@ -58,7 +59,9 @@ export default function LoginScreen({
       onTokenLogin(t);
     } else if (check.reason === 'invalid') {
       setTokenErr(
-        'Dieser Code ist ungültig oder wurde widerrufen. Bitte bei deinem Treuhänder einen neuen Code anfordern.'
+        IS_DEV_BUILD
+          ? 'Dieser Code wird hier nicht akzeptiert. Das ist eine Testversion der App — Codes aus der Buchhaltung funktionieren nur in der regulären App.'
+          : 'Dieser Code ist ungültig oder wurde widerrufen. Bitte bei deinem Treuhänder einen neuen Code anfordern.'
       );
     } else {
       setTokenErr(

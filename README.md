@@ -94,11 +94,18 @@ Download-Link ist damit ein GitHub-Release-Asset und **läuft nicht ab**
 **Release auslösen:**
 
 - Manuell: **Actions → „Android Release (APK)" → Run workflow** (Profil
-  `preview` = Dev-Stack, `production-apk` = Prod-Stack).
-- Automatisch: Version-Tag pushen — `git tag v1.0.1 && git push origin v1.0.1`.
+  `production-apk` = Prod-Stack, Vorgabe; `preview` = Dev-Stack).
+- Automatisch: Version-Tag pushen — `git tag v1.0.1 && git push origin v1.0.1`
+  (baut immer `production-apk`).
 
 Der Build dauert ~10–15 min; danach erscheint das Release unter
 **Releases** mit dem APK als Asset (fester Download-Link).
+
+> ⚠️ Kunden bekommen immer den Prod-Build. Ein `preview`-Build lädt nach
+> `fluke-web-dev` hoch, wo Prod-Mandanten-Codes unbekannt sind — die Belege
+> kommen nie in der Buchhaltung an. Er erscheint deshalb nur als
+> **Pre-Release** mit `-dev` in Tag und Dateiname, nie als „Latest", und die
+> App zeigt auf jedem Screen den roten Banner „TESTVERSION".
 
 ## Status
 
