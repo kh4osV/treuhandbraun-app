@@ -18,6 +18,7 @@ import type { Session } from '@supabase/supabase-js';
 import { supabase, type ClientRow } from './src/lib/supabase';
 import { loadToken, setToken, clearToken } from './src/lib/token';
 import { loadQueue, drain, staleItems } from './src/lib/queue';
+import { verifyMandantToken } from './src/lib/api';
 import { colors } from './src/lib/theme';
 import LoginScreen from './src/screens/LoginScreen';
 import ClientPickerScreen from './src/screens/ClientPickerScreen';
@@ -39,6 +40,24 @@ export default function App() {
       setSession(s.data.session);
       setMandantToken(t);
       setReady(true);
+      // Gespeicherter Code aus einer Version ohne Login-Prüfung oder seither
+      // widerrufen: im Hintergrund nachprüfen. Abgemeldet wird nur bei einer
+      // klaren Absage (401/403) — ohne Netz bleibt die App benutzbar, die
+      // Queue lädt dann eben später hoch.
+      if (t) {
+        void verifyMandantToken(t).then(async (check) => {
+          if (check.ok || check.reason !== 'invalid') return;
+          await clearToken();
+          setMandantToken(null);
+          Alert.alert(
+            'Code ungültig',
+            'Dein Code wird nicht mehr akzeptiert (ungültig oder widerrufen). ' +
+              'Bitte bei deinem Treuhänder einen neuen Code anfordern und dich ' +
+              'damit anmelden. Bereits erfasste Belege bleiben im Verlauf und ' +
+              'lassen sich danach erneut hochladen.'
+          );
+        });
+      }
     });
     const { data: sub } = supabase.auth.onAuthStateChange((_e, s) => {
       setSession(s);
