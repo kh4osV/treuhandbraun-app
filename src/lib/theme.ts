@@ -2,6 +2,8 @@
 // abgestimmt (web/src/app.css). Dunkles Theme, Bernstein-Akzent.
 // Eine Quelle der Wahrheit, damit App- und Web-Look gleich bleiben.
 
+import { Platform } from 'react-native';
+
 export const colors = {
   bg: '#0e1320',
   bgPanel: '#161c2e',
@@ -23,3 +25,13 @@ export const colors = {
 } as const;
 
 export const radius = { md: 8, lg: 12 } as const;
+
+/**
+ * EN-0022: Freier Rand unten auf Android. Die App zeichnet edge-to-edge,
+ * also auch unter die Navigationsleiste (Zurück/Home/Übersicht). Ohne
+ * diesen Rand lag „Verlauf ansehen" auf diesen Symbolen und liess sich nicht
+ * antippen. 48 dp ist die Höhe der Leiste mit drei Knöpfen (knapp 1 cm);
+ * die genaue Höhe liefert erst react-native-safe-area-context, das einen
+ * neuen nativen Build braucht.
+ */
+export const bottomInset = Platform.OS === 'android' ? 48 : 0;

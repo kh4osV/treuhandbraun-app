@@ -25,6 +25,7 @@ import {
   type QueueItem,
   type QueueStatus
 } from '../lib/queue';
+import { fmtDate, fmtTime, paymentLabel } from '../lib/format';
 import { colors, radius } from '../lib/theme';
 
 const STATUS_LABEL: Record<QueueStatus, string> = {
@@ -39,17 +40,6 @@ const STATUS_COLOR: Record<QueueStatus, string> = {
   done: colors.success,
   failed: colors.danger
 };
-
-function fmtDate(ts: number): string {
-  const d = new Date(ts);
-  const dd = String(d.getDate()).padStart(2, '0');
-  const mm = String(d.getMonth() + 1).padStart(2, '0');
-  return `${dd}.${mm}.${d.getFullYear()}`;
-}
-function fmtTime(ts: number): string {
-  const d = new Date(ts);
-  return `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`;
-}
 
 export default function QueueScreen({ onBack }: { onBack: () => void }) {
   const [items, setItems] = useState<QueueItem[]>([]);
@@ -107,6 +97,11 @@ export default function QueueScreen({ onBack }: { onBack: () => void }) {
               <Text style={styles.title}>Beleg vom {fmtDate(item.createdAt)}</Text>
               <Text style={styles.file} numberOfLines={1}>
                 {fmtTime(item.createdAt)} Uhr · {item.fileName}
+              </Text>
+              {/* EN-0025: Zahlungskonto (und Sachkonto, falls gewählt). */}
+              <Text style={styles.file} numberOfLines={1}>
+                {paymentLabel(item)}
+                {item.accountLabel ? ` · ${item.accountLabel}` : ''}
               </Text>
               {item.lastError ? <Text style={styles.errTxt}>{item.lastError}</Text> : null}
             </View>

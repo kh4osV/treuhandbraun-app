@@ -18,7 +18,8 @@ import * as ImageManipulator from 'expo-image-manipulator';
 import type { ClientRow } from '../lib/supabase';
 import { enqueue, subscribe, type QueueItem } from '../lib/queue';
 import { fetchIntakeAccounts, type IntakeAccount } from '../lib/api';
-import { colors, radius } from '../lib/theme';
+import { fmtDate, fmtTime, paymentLabel } from '../lib/format';
+import { bottomInset, colors, radius } from '../lib/theme';
 
 export default function CaptureScreen({
   client,
@@ -208,6 +209,10 @@ export default function CaptureScreen({
               Bitte nur EINEN Beleg pro Foto — mehrere Belege auf einem Bild können nicht
               getrennt verarbeitet werden.
             </Text>
+            {/* EN-0026: Fluke erkennt doppelte Belege serverseitig. */}
+            <Text style={styles.hint}>
+              Es macht nichts, wenn du denselben Beleg mehrfach hochlädst.
+            </Text>
 
             <Pressable style={styles.primary} onPress={shoot}>
               <Text style={styles.primaryText}>📷  Beleg fotografieren</Text>
@@ -254,24 +259,32 @@ export default function CaptureScreen({
               </View>
             )}
 
-            {/* FR 11.08.2026 #23 */}
+            {/* FR 11.08.2026 #23; EN-0025: Sekunden und Zahlungskonto je
+                Beleg, alle Belege über „Alle anzeigen" im Verlauf. */}
             {recent.length > 0 && (
               <View style={styles.recentBox}>
-                <Text style={styles.optTitle}>Zuletzt hochgeladen</Text>
+                <View style={styles.recentHead}>
+                  <Text style={styles.optTitle}>Zuletzt hochgeladen</Text>
+                  {queue.length > recent.length && (
+                    <Pressable onPress={onOpenQueue} hitSlop={8}>
+                      <Text style={styles.recentAll}>Alle {queue.length} anzeigen ›</Text>
+                    </Pressable>
+                  )}
+                </View>
                 {recent.map((it) => (
                   <View key={it.id} style={styles.recentRow}>
                     <Text style={styles.recentDot}>
                       {it.status === 'done' ? '✓' : it.status === 'failed' ? '✗' : '…'}
                     </Text>
-                    <Text style={styles.recentText} numberOfLines={1}>
-                      {new Date(it.createdAt).toLocaleString('de-CH', {
-                        day: '2-digit',
-                        month: '2-digit',
-                        hour: '2-digit',
-                        minute: '2-digit'
-                      })}
-                      {it.accountLabel ? ` · ${it.accountLabel}` : ''}
-                    </Text>
+                    <View style={styles.recentBody}>
+                      <Text style={styles.recentText} numberOfLines={1}>
+                        {fmtDate(it.createdAt)} · {fmtTime(it.createdAt)}
+                      </Text>
+                      <Text style={styles.recentSub} numberOfLines={1}>
+                        {paymentLabel(it)}
+                        {it.accountLabel ? ` · ${it.accountLabel}` : ''}
+                      </Text>
+                    </View>
                   </View>
                 ))}
               </View>
@@ -404,9 +417,18 @@ const styles = StyleSheet.create({
     padding: 14,
     gap: 6
   },
+  recentHead: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    gap: 12
+  },
+  recentAll: { color: colors.accent, fontSize: 13 },
   recentRow: { flexDirection: 'row', alignItems: 'center', gap: 8 },
   recentDot: { color: colors.textMuted, fontSize: 14, width: 16 },
-  recentText: { color: colors.textMuted, fontSize: 13, flex: 1 },
+  recentBody: { flex: 1 },
+  recentText: { color: colors.textMuted, fontSize: 13 },
+  recentSub: { color: colors.textDim, fontSize: 12 },
   queueBtn: {
     padding: 18,
     alignItems: 'center',
@@ -421,6 +443,8 @@ const styles = StyleSheet.create({
     borderTopLeftRadius: radius.lg,
     borderTopRightRadius: radius.lg,
     paddingTop: 16,
+    // EN-0022: Das Modal liegt ausserhalb von App.tsx, braucht den Rand selbst.
+    paddingBottom: bottomInset,
     maxHeight: '75%'
   },
   modalTitle: {

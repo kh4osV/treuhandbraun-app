@@ -20,7 +20,7 @@ import { loadToken, setToken, clearToken } from './src/lib/token';
 import { loadQueue, drain, staleItems } from './src/lib/queue';
 import { verifyMandantToken } from './src/lib/api';
 import { INTAKE_BASE_URL, IS_DEV_BUILD } from './src/lib/config';
-import { colors } from './src/lib/theme';
+import { bottomInset, colors } from './src/lib/theme';
 import LoginScreen from './src/screens/LoginScreen';
 import ClientPickerScreen from './src/screens/ClientPickerScreen';
 import CaptureScreen from './src/screens/CaptureScreen';
@@ -177,11 +177,13 @@ const styles = StyleSheet.create({
   // SafeAreaView von react-native deckt nur iOS-Insets ab. Auf Android
   // (edge-to-edge) zeichnet die App sonst UNTER die Statusleiste — der
   // Zurück-Button lag dadurch hinter Uhr/Akku. paddingTop = Höhe der
-  // Statusleiste schiebt den gesamten Inhalt darunter.
+  // Statusleiste schiebt den gesamten Inhalt darunter. Unten dasselbe für
+  // die Navigationsleiste (EN-0022, bottomInset in theme.ts).
   safe: {
     flex: 1,
     backgroundColor: colors.bg,
-    paddingTop: Platform.OS === 'android' ? RNStatusBar.currentHeight ?? 0 : 0
+    paddingTop: Platform.OS === 'android' ? RNStatusBar.currentHeight ?? 0 : 0,
+    paddingBottom: bottomInset
   },
   center: {
     flex: 1,
